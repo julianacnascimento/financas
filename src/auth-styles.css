@@ -1,0 +1,36 @@
+/* ── Tela de login (cole no final do seu styles.css) ── */
+.auth-wrap {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.auth-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 32px 28px;
+  width: 100%;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.auth-logo { font-weight: 700; font-size: 22px; text-align: center; }
+.auth-sub { color: var(--text-muted); font-size: 13px; text-align: center; margin-top: -8px; }
+.auth-submit { justify-content: center; width: 100%; padding: 11px; margin-top: 4px; }
+.auth-submit:disabled { opacity: .6; cursor: default; }
+.auth-toggle {
+  background: none; border: none; color: var(--text-muted);
+  font-size: 12px; cursor: pointer; text-align: center; padding: 4px;
+}
+.auth-toggle:hover { color: var(--text); }
+.auth-error {
+  background: rgba(239, 68, 68, .12); color: var(--danger);
+  border-radius: var(--radius-sm); padding: 9px 12px; font-size: 12px;
+}
+.auth-info {
+  background: rgba(34, 197, 94, .12); color: var(--receita);
+  border-radius: var(--radius-sm); padding: 9px 12px; font-size: 12px;
+}
