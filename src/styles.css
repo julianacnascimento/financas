@@ -677,3 +677,31 @@ body {
     gap: 12px;
   }
 }
+
+/* ── Busca na lista de transações ── */
+.tx-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 9px 12px;
+  margin-bottom: 4px;
+}
+.tx-search svg {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+.tx-search input {
+  background: none;
+  border: none;
+  outline: none;
+  width: 100%;
+  color: var(--text);
+  font-size: 13px;
+  font-family: inherit;
+}
+.tx-search input::placeholder {
+  color: var(--text-muted);
+}
