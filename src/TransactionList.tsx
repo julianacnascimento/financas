@@ -1,10 +1,11 @@
-import { Pencil, Search, Trash2 } from "lucide-react";
+import { Pencil, Search, Trash2, TrendingDown, TrendingUp } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
   categories as catApi,
   transactions as txApi,
   type Category,
   type Transaction,
+  type TransactionType,
 } from "./db";
 import { formatCurrency, formatDate } from "./hooks";
 
@@ -14,6 +15,8 @@ interface Props {
   onEdit: (tx: Transaction) => void;
   refreshKey?: number;
 }
+
+type TypeFilter = "all" | TransactionType;
 
 // Normaliza texto: minúsculas e sem acentos (ex.: "Água" → "agua").
 const normalize = (s: string) =>
@@ -31,6 +34,7 @@ export function TransactionList({
   const [txs, setTxs] = useState<Transaction[]>([]);
   const [cats, setCats] = useState<Category[]>([]);
   const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -73,18 +77,19 @@ export function TransactionList({
     );
   }
 
-  // Filtra pela busca (descrição, categoria ou observação).
+  // Filtra por tipo (receita/despesa) e pela busca (descrição, categoria ou observação).
   const q = normalize(search.trim());
-  const filtered = q
-    ? txs.filter((tx) => {
-        const catName = catMap[tx.categoryId]?.name ?? "";
-        return (
-          normalize(tx.description).includes(q) ||
-          normalize(catName).includes(q) ||
-          normalize(tx.notes ?? "").includes(q)
-        );
-      })
-    : txs;
+  const filtered = txs
+    .filter((tx) => typeFilter === "all" || tx.type === typeFilter)
+    .filter((tx) => {
+      if (!q) return true;
+      const catName = catMap[tx.categoryId]?.name ?? "";
+      return (
+        normalize(tx.description).includes(q) ||
+        normalize(catName).includes(q) ||
+        normalize(tx.notes ?? "").includes(q)
+      );
+    });
 
   const grouped: Record<string, Transaction[]> = {};
   filtered.forEach((tx) => {
@@ -94,18 +99,46 @@ export function TransactionList({
 
   return (
     <div className="tx-list">
-      <div className="tx-search">
-        <Search size={16} />
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Buscar por descrição ou categoria…"
-        />
+      <div className="tx-toolbar">
+        <div className="tx-search">
+          <Search size={16} />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar por descrição ou categoria…"
+          />
+        </div>
+        <div className="tx-type-filter">
+          <button
+            className={typeFilter === "all" ? "active" : ""}
+            onClick={() => setTypeFilter("all")}
+          >
+            Todas
+          </button>
+          <button
+            className={typeFilter === "receita" ? "active" : ""}
+            onClick={() => setTypeFilter("receita")}
+          >
+            <TrendingUp size={14} />
+            Receitas
+          </button>
+          <button
+            className={typeFilter === "despesa" ? "active" : ""}
+            onClick={() => setTypeFilter("despesa")}
+          >
+            <TrendingDown size={14} />
+            Despesas
+          </button>
+        </div>
       </div>
 
       {filtered.length === 0 ? (
         <div className="empty-state">
-          <p>Nenhuma transação encontrada para “{search}”.</p>
+          <p>
+            {search
+              ? `Nenhuma transação encontrada para “${search}”.`
+              : "Nenhuma transação encontrada para este filtro."}
+          </p>
         </div>
       ) : (
         Object.entries(grouped)
