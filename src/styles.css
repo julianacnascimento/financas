@@ -678,7 +678,13 @@ body {
   }
 }
 
-/* ── Busca na lista de transações ── */
+/* ── Busca e filtro na lista de transações ── */
+.tx-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
 .tx-search {
   display: flex;
   align-items: center;
@@ -687,7 +693,7 @@ body {
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   padding: 9px 12px;
-  margin-bottom: 4px;
+  flex: 1;
 }
 .tx-search svg {
   color: var(--text-muted);
@@ -704,4 +710,57 @@ body {
 }
 .tx-search input::placeholder {
   color: var(--text-muted);
+}
+
+.tx-type-filter {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 3px;
+  flex-shrink: 0;
+}
+.tx-type-filter button {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  border-radius: calc(var(--radius-sm) - 3px);
+  padding: 6px 10px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-family: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
+}
+.tx-type-filter button:hover {
+  color: var(--text);
+}
+.tx-type-filter button.active {
+  background: var(--surface2);
+  color: var(--text);
+}
+.tx-type-filter button:has(svg):nth-child(2).active {
+  color: var(--receita);
+}
+.tx-type-filter button:has(svg):nth-child(3).active {
+  color: var(--despesa);
+}
+
+@media (max-width: 520px) {
+  .tx-toolbar {
+    flex-wrap: wrap;
+  }
+  .tx-type-filter {
+    width: 100%;
+  }
+  .tx-type-filter button {
+    flex: 1;
+    justify-content: center;
+  }
 }
