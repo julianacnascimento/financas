@@ -1,9 +1,15 @@
-import { CreditCard as CreditCardIcon, Pencil, Search, Trash2 } from "lucide-react";
-import { Pencil, Search, Trash2, TrendingDown, TrendingUp } from "lucide-react";
+import {
+  CreditCard as CreditCardIcon,
+  Pencil,
+  Search,
+  Trash2,
+  TrendingDown,
+  TrendingUp,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import {
-  categories as catApi,
   creditCards as cardsApi,
+  categories as catApi,
   transactions as txApi,
   type Category,
   type CreditCard,
@@ -90,7 +96,9 @@ export function TransactionList({
   const filtered = q
     ? txs.filter((tx) => {
         const catName = catMap[tx.categoryId]?.name ?? "";
-        const cardName = tx.creditCardId ? cardMap[tx.creditCardId]?.name ?? "" : "";
+        const cardName = tx.creditCardId
+          ? (cardMap[tx.creditCardId]?.name ?? "")
+          : "";
         return (
           normalize(tx.description).includes(q) ||
           normalize(catName).includes(q) ||
@@ -157,7 +165,9 @@ export function TransactionList({
               <div className="tx-date-header">{formatDate(date)}</div>
               {items.map((tx) => {
                 const cat = catMap[tx.categoryId];
-                const card = tx.creditCardId ? cardMap[tx.creditCardId] : undefined;
+                const card = tx.creditCardId
+                  ? cardMap[tx.creditCardId]
+                  : undefined;
                 return (
                   <div key={tx.id} className={`tx-item ${tx.type}`}>
                     <span className="tx-icon">{cat?.icon ?? "📦"}</span>
@@ -166,7 +176,10 @@ export function TransactionList({
                       <span className="tx-cat">{cat?.name ?? "—"}</span>
                     </div>
                     {card && (
-                      <span className="card-tag" style={{ borderColor: card.color, color: card.color }}>
+                      <span
+                        className="card-tag"
+                        style={{ borderColor: card.color, color: card.color }}
+                      >
                         <CreditCardIcon size={11} /> {card.name}
                       </span>
                     )}
