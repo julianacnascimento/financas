@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { transactions, categories, goals as goalsApi, type Transaction, type Category, type Goal } from './db';
+import { transactions, categories, goals as goalsApi, creditCards as cardsApi, cardStatements as statementsApi, type Transaction, type Category, type Goal, type CreditCard, type CardStatement } from './db';
+import { computeCardStats } from './creditCardStats';
 import { formatCurrency } from './hooks';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell,
 } from 'recharts';
-import { TrendingUp, TrendingDown, Wallet } from 'lucide-react';
+import { TrendingUp, TrendingDown, Wallet, CreditCard as CreditCardIcon } from 'lucide-react';
 
 interface Props { startDate: string; endDate: string; }
 
@@ -13,6 +14,9 @@ export function Dashboard({ startDate, endDate }: Props) {
   const [txs, setTxs] = useState<Transaction[]>([]);
   const [cats, setCats] = useState<Category[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
+  const [cards, setCards] = useState<CreditCard[]>([]);
+  const [allCardTxs, setAllCardTxs] = useState<Transaction[]>([]);
+  const [statements, setStatements] = useState<CardStatement[]>([]);
   const [accBalance, setAccBalance] = useState(0);
   const [loading, setLoading] = useState(true);
 
@@ -22,9 +26,12 @@ export function Dashboard({ startDate, endDate }: Props) {
       transactions.between(startDate, endDate),
       categories.all(),
       goalsApi.all(),
+      cardsApi.all(),
       transactions.balanceUntil(endDate),
-    ]).then(([t, c, g, bal]) => {
-      setTxs(t); setCats(c); setGoals(g); setAccBalance(bal); setLoading(false);
+      transactions.allCardTransactions(),
+      statementsApi.all(),
+    ]).then(([t, c, g, cc, bal, allExp, st]) => {
+      setTxs(t); setCats(c); setGoals(g); setCards(cc); setAccBalance(bal); setAllCardTxs(allExp); setStatements(st); setLoading(false);
     });
   }, [startDate, endDate]);
 
@@ -48,6 +55,12 @@ export function Dashboard({ startDate, endDate }: Props) {
     value,
     color: catMap[Number(id)]?.color ?? '#6b7280',
   })).sort((a, b) => b.value - a.value).slice(0, 6);
+
+  const cardTotals: Record<number, number> = {};
+  txs.filter(t => t.type === 'despesa' && t.creditCardId).forEach(t => {
+    cardTotals[t.creditCardId!] = (cardTotals[t.creditCardId!] ?? 0) + t.amount;
+  });
+  const today = new Date().toISOString().slice(0, 10);
 
   const dayMap: Record<string, { receita: number; despesa: number }> = {};
   txs.forEach(t => {
@@ -119,6 +132,38 @@ export function Dashboard({ startDate, endDate }: Props) {
           </div>
         )}
       </div>
+
+      {cards.length > 0 && (
+        <div className="goals-section">
+          <h3>Gastos por cartão</h3>
+          <div className="goals-grid">
+            {cards.map(c => {
+              const spent = cardTotals[c.id!] ?? 0;
+              const { committed } = computeCardStats(c, allCardTxs, statements, today);
+              const pct = c.limitAmount ? Math.min((committed / c.limitAmount) * 100, 100) : undefined;
+              return (
+                <div key={c.id} className="goal-card">
+                  <div className="goal-header">
+                    <span className="goal-name"><CreditCardIcon size={13} /> {c.name}</span>
+                    <span className="goal-pct">{formatCurrency(spent)}</span>
+                  </div>
+                  {c.limitAmount != null && (
+                    <>
+                      <div className="goal-bar-bg">
+                        <div className="goal-bar-fill" style={{ width: `${pct}%`, background: c.color }} />
+                      </div>
+                      <div className="goal-footer">
+                        <span>{formatCurrency(committed)} de {formatCurrency(c.limitAmount)}</span>
+                        <span>{pct?.toFixed(0)}%</span>
+                      </div>
+                    </>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {goals.length > 0 && (
         <div className="goals-section">

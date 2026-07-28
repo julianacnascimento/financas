@@ -1,9 +1,11 @@
-import { Pencil, Search, Trash2 } from "lucide-react";
+import { CreditCard as CreditCardIcon, Pencil, Search, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
   categories as catApi,
+  creditCards as cardsApi,
   transactions as txApi,
   type Category,
+  type CreditCard,
   type Transaction,
 } from "./db";
 import { formatCurrency, formatDate } from "./hooks";
@@ -30,23 +32,28 @@ export function TransactionList({
 }: Props) {
   const [txs, setTxs] = useState<Transaction[]>([]);
   const [cats, setCats] = useState<Category[]>([]);
+  const [cards, setCards] = useState<CreditCard[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setLoading(true);
-    Promise.all([txApi.between(startDate, endDate), catApi.all()]).then(
-      ([t, c]) => {
-        setTxs(t);
-        setCats(c);
-        setLoading(false);
-      },
-    );
+    Promise.all([
+      txApi.between(startDate, endDate),
+      catApi.all(),
+      cardsApi.all(),
+    ]).then(([t, c, cc]) => {
+      setTxs(t);
+      setCats(c);
+      setCards(cc);
+      setLoading(false);
+    });
   }, [startDate, endDate, refreshKey]);
 
   if (loading) return <div className="loading">Carregando…</div>;
 
   const catMap = Object.fromEntries(cats.map((c) => [c.id!, c]));
+  const cardMap = Object.fromEntries(cards.map((c) => [c.id!, c]));
 
   async function deleteTx(tx: Transaction) {
     if (!tx.id) return;
@@ -78,9 +85,11 @@ export function TransactionList({
   const filtered = q
     ? txs.filter((tx) => {
         const catName = catMap[tx.categoryId]?.name ?? "";
+        const cardName = tx.creditCardId ? cardMap[tx.creditCardId]?.name ?? "" : "";
         return (
           normalize(tx.description).includes(q) ||
           normalize(catName).includes(q) ||
+          normalize(cardName).includes(q) ||
           normalize(tx.notes ?? "").includes(q)
         );
       })
@@ -115,6 +124,7 @@ export function TransactionList({
               <div className="tx-date-header">{formatDate(date)}</div>
               {items.map((tx) => {
                 const cat = catMap[tx.categoryId];
+                const card = tx.creditCardId ? cardMap[tx.creditCardId] : undefined;
                 return (
                   <div key={tx.id} className={`tx-item ${tx.type}`}>
                     <span className="tx-icon">{cat?.icon ?? "📦"}</span>
@@ -122,6 +132,11 @@ export function TransactionList({
                       <span className="tx-desc">{tx.description}</span>
                       <span className="tx-cat">{cat?.name ?? "—"}</span>
                     </div>
+                    {card && (
+                      <span className="card-tag" style={{ borderColor: card.color, color: card.color }}>
+                        <CreditCardIcon size={11} /> {card.name}
+                      </span>
+                    )}
                     {tx.installments > 1 && (
                       <span className="installment-tag">
                         {tx.currentInstallment}/{tx.installments}x

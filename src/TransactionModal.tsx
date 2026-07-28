@@ -2,8 +2,10 @@ import { X } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
   categories as catApi,
+  creditCards as cardsApi,
   transactions as txApi,
   type Category,
+  type CreditCard,
   type Transaction,
   type TransactionType,
 } from "./db";
@@ -17,18 +19,26 @@ interface Props {
 
 export function TransactionModal({ onClose, editTx, onSaved }: Props) {
   const [cats, setCats] = useState<Category[]>([]);
+  const [cards, setCards] = useState<CreditCard[]>([]);
   const [type, setType] = useState<TransactionType>(editTx?.type ?? "despesa");
   const [description, setDescription] = useState(editTx?.description ?? "");
   const [amount, setAmount] = useState(editTx ? String(editTx.amount) : "");
   const [categoryId, setCategoryId] = useState<number>(editTx?.categoryId ?? 0);
+  const [creditCardId, setCreditCardId] = useState<number>(
+    editTx?.creditCardId ?? 0,
+  );
   const [date, setDate] = useState(
     editTx?.date ?? new Date().toISOString().slice(0, 10),
   );
   const [installments, setInstallments] = useState(editTx?.installments ?? 1);
   const [notes, setNotes] = useState(editTx?.notes ?? "");
+  const [applyToAll, setApplyToAll] = useState(false);
+
+  const isGroupedInstallment = !!editTx?.groupId && editTx.installments > 1;
 
   useEffect(() => {
     catApi.all().then(setCats);
+    cardsApi.all().then(setCards);
   }, []);
 
   const filteredCats = cats.filter((c) => c.type === type);
@@ -44,11 +54,19 @@ export function TransactionModal({ onClose, editTx, onSaved }: Props) {
         amount: val,
         type,
         categoryId,
+        creditCardId: creditCardId || undefined,
         date,
         installments,
         currentInstallment: editTx.currentInstallment,
         notes,
       });
+      if (applyToAll && editTx.groupId) {
+        await txApi.updateByGroupId(editTx.groupId, {
+          categoryId,
+          creditCardId: creditCardId || undefined,
+          notes,
+        });
+      }
     } else {
       if (installments > 1) {
         const groupId = uuid();
@@ -61,6 +79,7 @@ export function TransactionModal({ onClose, editTx, onSaved }: Props) {
             amount: parseFloat((val / installments).toFixed(2)),
             type,
             categoryId,
+            creditCardId: creditCardId || undefined,
             date: txDateStr,
             installments,
             currentInstallment: i + 1,
@@ -74,6 +93,7 @@ export function TransactionModal({ onClose, editTx, onSaved }: Props) {
           amount: val,
           type,
           categoryId,
+          creditCardId: creditCardId || undefined,
           date,
           installments: 1,
           currentInstallment: 1,
@@ -159,6 +179,35 @@ export function TransactionModal({ onClose, editTx, onSaved }: Props) {
               ))}
             </select>
           </div>
+          {cards.length > 0 && (
+            <div className="field full">
+              <label>Cartão (opcional)</label>
+              <select
+                value={creditCardId}
+                onChange={(e) => setCreditCardId(Number(e.target.value))}
+              >
+                <option value={0}>Nenhum</option>
+                {cards.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          {isGroupedInstallment && (
+            <div className="field full">
+              <label className="checkbox-row">
+                <input
+                  type="checkbox"
+                  checked={applyToAll}
+                  onChange={(e) => setApplyToAll(e.target.checked)}
+                />
+                Aplicar categoria, cartão e observação a todas as{" "}
+                {editTx!.installments} parcelas
+              </label>
+            </div>
+          )}
           {!editTx && type === "despesa" && (
             <div className="field full">
               <label>Parcelamento</label>

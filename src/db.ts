@@ -18,11 +18,21 @@ export interface Transaction {
   amount: number;
   type: TransactionType;
   categoryId: number;
+  creditCardId?: number;
   date: string;
   installments: number;
   currentInstallment: number;
   groupId?: string;
   notes?: string;
+}
+
+export interface CreditCard {
+  id?: number;
+  name: string;
+  color: string;
+  limitAmount?: number;
+  closingDay?: number;
+  dueDay?: number;
 }
 
 export interface Goal {
@@ -32,6 +42,15 @@ export interface Goal {
   currentAmount: number;
   deadline: string;
   color: string;
+}
+
+export interface CardStatement {
+  id?: number;
+  creditCardId: number;
+  cycleYear: number;
+  cycleMonth: number;
+  paid: boolean;
+  paidAt?: string;
 }
 
 // ── Mapeamento snake_case ↔ camelCase ──────────────────────────────────────
@@ -44,6 +63,7 @@ function txFromDB(r: any): Transaction {
     amount: Number(r.amount),
     type: r.type,
     categoryId: r.category_id,
+    creditCardId: r.credit_card_id ?? undefined,
     date: r.date,
     installments: r.installments,
     currentInstallment: r.current_installment,
@@ -58,6 +78,7 @@ function txToDB(t: Omit<Transaction, 'id'>) {
     amount: t.amount,
     type: t.type,
     category_id: t.categoryId,
+    credit_card_id: t.creditCardId ?? null,
     date: t.date,
     installments: t.installments,
     current_installment: t.currentInstallment,
@@ -68,6 +89,28 @@ function txToDB(t: Omit<Transaction, 'id'>) {
 
 function catFromDB(r: any): Category {
   return { id: r.id, name: r.name, color: r.color, icon: r.icon, type: r.type };
+}
+
+function cardFromDB(r: any): CreditCard {
+  return {
+    id: r.id,
+    name: r.name,
+    color: r.color,
+    limitAmount: r.limit_amount != null ? Number(r.limit_amount) : undefined,
+    closingDay: r.closing_day ?? undefined,
+    dueDay: r.due_day ?? undefined,
+  };
+}
+
+function statementFromDB(r: any): CardStatement {
+  return {
+    id: r.id,
+    creditCardId: r.credit_card_id,
+    cycleYear: r.cycle_year,
+    cycleMonth: r.cycle_month,
+    paid: r.paid,
+    paidAt: r.paid_at ?? undefined,
+  };
 }
 
 function goalFromDB(r: any): Goal {
@@ -90,6 +133,19 @@ export const transactions = {
       .gte('date', startDate)
       .lte('date', endDate)
       .order('date', { ascending: false });
+    if (error) throw error;
+    return (data ?? []).map(txFromDB);
+  },
+
+  // Todas as despesas e receitas vinculadas a algum cartão (sem filtro de
+  // data). Usado para calcular o limite comprometido considerando a compra
+  // parcelada inteira, as faturas fechadas ainda não pagas e o que já foi
+  // recebido/pago no cartão (ver creditCardStats.ts).
+  async allCardTransactions(): Promise<Transaction[]> {
+    const { data, error } = await supabase
+      .from('transactions')
+      .select('*')
+      .not('credit_card_id', 'is', null);
     if (error) throw error;
     return (data ?? []).map(txFromDB);
   },
@@ -124,6 +180,8 @@ export const transactions = {
     if (t.amount !== undefined) body.amount = t.amount;
     if (t.type !== undefined) body.type = t.type;
     if (t.categoryId !== undefined) body.category_id = t.categoryId;
+    if (t.creditCardId !== undefined)
+      body.credit_card_id = t.creditCardId ?? null;
     if (t.date !== undefined) body.date = t.date;
     if (t.installments !== undefined) body.installments = t.installments;
     if (t.currentInstallment !== undefined)
@@ -136,6 +194,24 @@ export const transactions = {
 
   async delete(id: number): Promise<void> {
     const { error } = await supabase.from('transactions').delete().eq('id', id);
+    if (error) throw error;
+  },
+
+  // Aplica categoria/cartão/observação a todas as parcelas do grupo de uma vez
+  // (não mexe em valor, data ou número da parcela, que são específicos de cada uma).
+  async updateByGroupId(
+    groupId: string,
+    t: Pick<Partial<Transaction>, 'categoryId' | 'creditCardId' | 'notes'>,
+  ): Promise<void> {
+    const body: Record<string, any> = {};
+    if (t.categoryId !== undefined) body.category_id = t.categoryId;
+    if (t.creditCardId !== undefined) body.credit_card_id = t.creditCardId ?? null;
+    if (t.notes !== undefined) body.notes = t.notes;
+
+    const { error } = await supabase
+      .from('transactions')
+      .update(body)
+      .eq('group_id', groupId);
     if (error) throw error;
   },
 
@@ -223,6 +299,79 @@ export const goals = {
 
   async delete(id: number): Promise<void> {
     const { error } = await supabase.from('goals').delete().eq('id', id);
+    if (error) throw error;
+  },
+};
+
+// ── API de cartões de crédito ────────────────────────────────────────────
+export const creditCards = {
+  async all(): Promise<CreditCard[]> {
+    const { data, error } = await supabase
+      .from('credit_cards')
+      .select('*')
+      .order('id', { ascending: true });
+    if (error) throw error;
+    return (data ?? []).map(cardFromDB);
+  },
+
+  async add(c: Omit<CreditCard, 'id'>): Promise<CreditCard> {
+    const { data, error } = await supabase
+      .from('credit_cards')
+      .insert({
+        name: c.name,
+        color: c.color,
+        limit_amount: c.limitAmount ?? null,
+        closing_day: c.closingDay ?? null,
+        due_day: c.dueDay ?? null,
+      })
+      .select()
+      .single();
+    if (error) throw error;
+    return cardFromDB(data);
+  },
+
+  async update(id: number, c: Partial<CreditCard>): Promise<void> {
+    const body: Record<string, any> = {};
+    if (c.name !== undefined) body.name = c.name;
+    if (c.color !== undefined) body.color = c.color;
+    if (c.limitAmount !== undefined) body.limit_amount = c.limitAmount ?? null;
+    if (c.closingDay !== undefined) body.closing_day = c.closingDay ?? null;
+    if (c.dueDay !== undefined) body.due_day = c.dueDay ?? null;
+
+    const { error } = await supabase.from('credit_cards').update(body).eq('id', id);
+    if (error) throw error;
+  },
+
+  async delete(id: number): Promise<void> {
+    const { error } = await supabase.from('credit_cards').delete().eq('id', id);
+    if (error) throw error;
+  },
+};
+
+// ── API de faturas de cartão ─────────────────────────────────────────────
+export const cardStatements = {
+  async all(): Promise<CardStatement[]> {
+    const { data, error } = await supabase.from('card_statements').select('*');
+    if (error) throw error;
+    return (data ?? []).map(statementFromDB);
+  },
+
+  async setPaid(
+    creditCardId: number,
+    cycleYear: number,
+    cycleMonth: number,
+    paid: boolean,
+  ): Promise<void> {
+    const { error } = await supabase.from('card_statements').upsert(
+      {
+        credit_card_id: creditCardId,
+        cycle_year: cycleYear,
+        cycle_month: cycleMonth,
+        paid,
+        paid_at: paid ? new Date().toISOString() : null,
+      },
+      { onConflict: 'credit_card_id,cycle_year,cycle_month' },
+    );
     if (error) throw error;
   },
 };
