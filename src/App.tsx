@@ -2,6 +2,7 @@ import type { Session } from "@supabase/supabase-js";
 import {
   ChevronLeft,
   ChevronRight,
+  CreditCard as CreditCardIcon,
   LayoutDashboard,
   List,
   LogOut,
@@ -10,6 +11,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Auth } from "./Auth";
+import { CreditCardsPage } from "./CreditCardsPage";
 import { Dashboard } from "./Dashboard";
 import { auth, seedCategories, type Transaction } from "./db";
 import { GoalsPage } from "./GoalsPage";
@@ -17,7 +19,7 @@ import { useMonthFilter } from "./hooks";
 import { TransactionList } from "./TransactionList";
 import { TransactionModal } from "./TransactionModal";
 
-type Tab = "dashboard" | "transacoes" | "metas";
+type Tab = "dashboard" | "transacoes" | "cartoes" | "metas";
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
@@ -80,6 +82,12 @@ export default function App() {
               <List size={16} /> <span>Transações</span>
             </button>
             <button
+              className={tab === "cartoes" ? "active" : ""}
+              onClick={() => setTab("cartoes")}
+            >
+              <CreditCardIcon size={16} /> <span>Cartões</span>
+            </button>
+            <button
               className={tab === "metas" ? "active" : ""}
               onClick={() => setTab("metas")}
             >
@@ -99,7 +107,7 @@ export default function App() {
         </div>
       </header>
 
-      {tab !== "metas" && (
+      {(tab === "dashboard" || tab === "transacoes" || tab === "cartoes") && (
         <div className="month-bar">
           <button className="icon-btn" onClick={prev}>
             <ChevronLeft size={18} />
@@ -120,6 +128,13 @@ export default function App() {
             startDate={startDate}
             endDate={endDate}
             onEdit={openEdit}
+            refreshKey={refreshKey}
+          />
+        )}
+        {tab === "cartoes" && (
+          <CreditCardsPage
+            startDate={startDate}
+            endDate={endDate}
             refreshKey={refreshKey}
           />
         )}

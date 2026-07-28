@@ -299,6 +299,9 @@ body {
 .goal-name {
   font-weight: 600;
   font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 .goal-pct {
   font-size: 12px;
@@ -513,6 +516,21 @@ body {
   min-width: 48px;
   text-align: center;
 }
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.checkbox-row input[type="checkbox"] {
+  accent-color: var(--accent);
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+}
 .modal-actions {
   display: flex;
   gap: 8px;
@@ -604,6 +622,18 @@ body {
 .stat-val.urgent {
   color: var(--danger);
 }
+.stat-val.receita {
+  color: var(--receita);
+}
+.stat-val.despesa {
+  color: var(--despesa);
+  padding-left: 4px;
+}
+.cc-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
 .goal-pct-big {
   font-size: 28px;
   font-weight: 800;
@@ -611,6 +641,87 @@ body {
   top: 16px;
   right: 60px;
   opacity: 0.15;
+}
+
+/* ── Página de cartões de crédito ── */
+.cards-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.cc-full-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+.cc-full-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  border-top: 3px solid var(--accent);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.cc-full-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+.cc-full-header h3 {
+  font-size: 15px;
+  font-weight: 700;
+}
+.cc-saldo-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.cc-saldo-value {
+  font-size: 20px;
+  font-weight: 700;
+}
+.cc-days {
+  display: flex;
+  gap: 12px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.cc-note {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.cc-statements {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.cc-statement-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: var(--surface2);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  font-size: 12px;
+}
+.cc-statement-row .btn-ghost {
+  padding: 4px 10px;
+  font-size: 11px;
+  flex-shrink: 0;
+}
+.card-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid;
+  border-radius: 4px;
+  padding: 2px 6px;
+  flex-shrink: 0;
 }
 
 /* ── Misc ── */
