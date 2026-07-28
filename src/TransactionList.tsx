@@ -93,26 +93,31 @@ export function TransactionList({
 
   // Filtra por tipo (receita/despesa) e pela busca (descrição, categoria ou observação).
   const q = normalize(search.trim());
-  const filtered = q
-    ? txs.filter((tx) => {
-        const catName = catMap[tx.categoryId]?.name ?? "";
-        const cardName = tx.creditCardId
-          ? (cardMap[tx.creditCardId]?.name ?? "")
-          : "";
-        return (
-          normalize(tx.description).includes(q) ||
-          normalize(catName).includes(q) ||
-          normalize(cardName).includes(q) ||
-          normalize(tx.notes ?? "").includes(q)
-        );
-      })
-    : txs;
+  const filtered = txs.filter((tx) => {
+    if (typeFilter !== "all" && tx.type !== typeFilter) return false;
+    if (!q) return true;
+    const catName = catMap[tx.categoryId]?.name ?? "";
+    const cardName = tx.creditCardId
+      ? (cardMap[tx.creditCardId]?.name ?? "")
+      : "";
+    return (
+      normalize(tx.description).includes(q) ||
+      normalize(catName).includes(q) ||
+      normalize(cardName).includes(q) ||
+      normalize(tx.notes ?? "").includes(q)
+    );
+  });
 
   const grouped: Record<string, Transaction[]> = {};
   filtered.forEach((tx) => {
     if (!grouped[tx.date]) grouped[tx.date] = [];
     grouped[tx.date].push(tx);
   });
+
+  const filteredTotal = filtered.reduce(
+    (sum, tx) => sum + (tx.type === "despesa" ? -tx.amount : tx.amount),
+    0,
+  );
 
   return (
     <div className="tx-list">
@@ -148,6 +153,21 @@ export function TransactionList({
           </button>
         </div>
       </div>
+
+      {filtered.length > 0 && (
+        <div className="tx-summary">
+          <span className="tx-summary-count">
+            {filtered.length}{" "}
+            {filtered.length === 1 ? "transação" : "transações"}
+          </span>
+          <span
+            className={`tx-summary-total ${filteredTotal < 0 ? "despesa" : "receita"}`}
+          >
+            Total: {filteredTotal < 0 ? "−" : "+"}
+            {formatCurrency(Math.abs(filteredTotal))}
+          </span>
+        </div>
+      )}
 
       {filtered.length === 0 ? (
         <div className="empty-state">

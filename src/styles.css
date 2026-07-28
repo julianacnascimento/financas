@@ -863,6 +863,25 @@ body {
   color: var(--despesa);
 }
 
+.tx-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 4px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.tx-summary-total {
+  font-weight: 600;
+  color: var(--text);
+}
+.tx-summary-total.receita {
+  color: var(--receita);
+}
+.tx-summary-total.despesa {
+  color: var(--despesa);
+}
+
 @media (max-width: 520px) {
   .tx-toolbar {
     flex-wrap: wrap;
