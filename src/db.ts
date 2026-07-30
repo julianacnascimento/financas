@@ -24,6 +24,8 @@ export interface Transaction {
   currentInstallment: number;
   groupId?: string;
   notes?: string;
+  isFixed: boolean;
+  paid: boolean;
 }
 
 export interface CreditCard {
@@ -69,6 +71,8 @@ function txFromDB(r: any): Transaction {
     currentInstallment: r.current_installment,
     groupId: r.group_id ?? undefined,
     notes: r.notes ?? undefined,
+    isFixed: r.is_fixed ?? false,
+    paid: r.paid ?? false,
   };
 }
 
@@ -84,6 +88,8 @@ function txToDB(t: Omit<Transaction, 'id'>) {
     current_installment: t.currentInstallment,
     group_id: t.groupId ?? null,
     notes: t.notes ?? null,
+    is_fixed: t.isFixed,
+    paid: t.paid,
   };
 }
 
@@ -187,6 +193,8 @@ export const transactions = {
     if (t.currentInstallment !== undefined)
       body.current_installment = t.currentInstallment;
     if (t.notes !== undefined) body.notes = t.notes;
+    if (t.isFixed !== undefined) body.is_fixed = t.isFixed;
+    if (t.paid !== undefined) body.paid = t.paid;
 
     const { error } = await supabase.from('transactions').update(body).eq('id', id);
     if (error) throw error;

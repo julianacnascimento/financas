@@ -65,6 +65,8 @@ create table transactions (
   current_installment int not null default 1,
   group_id            text,
   notes               text,
+  is_fixed            boolean not null default false,
+  paid                boolean not null default false,
   created_at          timestamptz default now()
 );
 
