@@ -32,6 +32,7 @@ export function TransactionModal({ onClose, editTx, onSaved }: Props) {
   );
   const [installments, setInstallments] = useState(editTx?.installments ?? 1);
   const [notes, setNotes] = useState(editTx?.notes ?? "");
+  const [isFixed, setIsFixed] = useState(editTx?.isFixed ?? false);
   const [applyToAll, setApplyToAll] = useState(false);
 
   const isGroupedInstallment = !!editTx?.groupId && editTx.installments > 1;
@@ -59,6 +60,7 @@ export function TransactionModal({ onClose, editTx, onSaved }: Props) {
         installments,
         currentInstallment: editTx.currentInstallment,
         notes,
+        isFixed,
       });
       if (applyToAll && editTx.groupId) {
         await txApi.updateByGroupId(editTx.groupId, {
@@ -85,6 +87,8 @@ export function TransactionModal({ onClose, editTx, onSaved }: Props) {
             currentInstallment: i + 1,
             groupId,
             notes,
+            isFixed,
+            paid: false,
           });
         }
       } else {
@@ -98,6 +102,8 @@ export function TransactionModal({ onClose, editTx, onSaved }: Props) {
           installments: 1,
           currentInstallment: 1,
           notes,
+          isFixed,
+          paid: false,
         });
       }
     }
@@ -232,6 +238,17 @@ export function TransactionModal({ onClose, editTx, onSaved }: Props) {
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Detalhes adicionais…"
             />
+          </div>
+          <div className="field full">
+            <label className="checkbox-row">
+              <input
+                type="checkbox"
+                checked={isFixed}
+                onChange={(e) => setIsFixed(e.target.checked)}
+              />
+              Conta fixa (ex: aluguel, condomínio) — fica fixada no topo da
+              lista
+            </label>
           </div>
         </div>
 

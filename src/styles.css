@@ -334,6 +334,11 @@ body {
   flex-direction: column;
   gap: 8px;
 }
+.tx-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
 .tx-date-header {
   font-size: 11px;
   font-weight: 600;
@@ -400,6 +405,28 @@ body {
 }
 .tx-item:hover .tx-actions {
   opacity: 1;
+}
+.tx-fixed-group .tx-date-header {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--accent);
+}
+.tx-item.fixed:not(.paid) {
+  border-color: #cc0002;
+}
+.tx-item.fixed.paid {
+  border-color: var(--receita);
+}
+.tx-item.paid {
+  opacity: 0.55;
+}
+.paid-toggle {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+.paid-icon {
+  color: var(--receita);
 }
 
 /* ── Modal ── */
@@ -847,7 +874,9 @@ body {
   font-weight: 500;
   cursor: pointer;
   white-space: nowrap;
-  transition: background 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s;
 }
 .tx-type-filter button:hover {
   color: var(--text);

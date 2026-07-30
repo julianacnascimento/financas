@@ -1,6 +1,9 @@
 import {
+  CheckCircle2,
+  Circle,
   CreditCard as CreditCardIcon,
   Pencil,
+  Pin,
   Search,
   Trash2,
   TrendingDown,
@@ -83,6 +86,13 @@ export function TransactionList({
     setTxs((prev) => prev.filter((t) => t.id !== tx.id));
   }
 
+  async function togglePaid(tx: Transaction) {
+    if (!tx.id) return;
+    const paid = !tx.paid;
+    await txApi.update(tx.id, { paid });
+    setTxs((prev) => prev.map((t) => (t.id === tx.id ? { ...t, paid } : t)));
+  }
+
   if (txs.length === 0) {
     return (
       <div className="empty-state">
@@ -108,11 +118,20 @@ export function TransactionList({
     );
   });
 
+  const fixedItems = filtered
+    .filter((tx) => tx.isFixed)
+    .sort((a, b) => {
+      if (a.paid !== b.paid) return a.paid ? 1 : -1;
+      return a.description.localeCompare(b.description);
+    });
+
   const grouped: Record<string, Transaction[]> = {};
-  filtered.forEach((tx) => {
-    if (!grouped[tx.date]) grouped[tx.date] = [];
-    grouped[tx.date].push(tx);
-  });
+  filtered
+    .filter((tx) => !tx.isFixed)
+    .forEach((tx) => {
+      if (!grouped[tx.date]) grouped[tx.date] = [];
+      grouped[tx.date].push(tx);
+    });
 
   const filteredTotal = filtered.reduce(
     (sum, tx) => sum + (tx.type === "despesa" ? -tx.amount : tx.amount),
@@ -169,6 +188,17 @@ export function TransactionList({
         </div>
       )}
 
+      {fixedItems.length > 0 && (
+        <div className="tx-group tx-fixed-group">
+          <div className="tx-date-header">
+            <Pin size={11} /> Contas fixas
+          </div>
+          {fixedItems.map((tx) =>
+            renderTxItem(tx, { showPaidToggle: true }),
+          )}
+        </div>
+      )}
+
       {filtered.length === 0 ? (
         <div className="empty-state">
           <p>
@@ -183,55 +213,68 @@ export function TransactionList({
           .map(([date, items]) => (
             <div key={date} className="tx-group">
               <div className="tx-date-header">{formatDate(date)}</div>
-              {items.map((tx) => {
-                const cat = catMap[tx.categoryId];
-                const card = tx.creditCardId
-                  ? cardMap[tx.creditCardId]
-                  : undefined;
-                return (
-                  <div key={tx.id} className={`tx-item ${tx.type}`}>
-                    <span className="tx-icon">{cat?.icon ?? "📦"}</span>
-                    <div className="tx-info">
-                      <span className="tx-desc">{tx.description}</span>
-                      <span className="tx-cat">{cat?.name ?? "—"}</span>
-                    </div>
-                    {card && (
-                      <span
-                        className="card-tag"
-                        style={{ borderColor: card.color, color: card.color }}
-                      >
-                        <CreditCardIcon size={11} /> {card.name}
-                      </span>
-                    )}
-                    {tx.installments > 1 && (
-                      <span className="installment-tag">
-                        {tx.currentInstallment}/{tx.installments}x
-                      </span>
-                    )}
-                    <span className={`tx-amount ${tx.type}`}>
-                      {tx.type === "despesa" ? "−" : "+"}
-                      {formatCurrency(tx.amount)}
-                    </span>
-                    <div className="tx-actions">
-                      <button
-                        className="icon-btn small"
-                        onClick={() => onEdit(tx)}
-                      >
-                        <Pencil size={14} />
-                      </button>
-                      <button
-                        className="icon-btn small danger"
-                        onClick={() => deleteTx(tx)}
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
+              {items.map((tx) => renderTxItem(tx))}
             </div>
           ))
       )}
     </div>
   );
+
+  function renderTxItem(tx: Transaction, opts?: { showPaidToggle?: boolean }) {
+    const cat = catMap[tx.categoryId];
+    const card = tx.creditCardId ? cardMap[tx.creditCardId] : undefined;
+    return (
+      <div
+        key={tx.id}
+        className={`tx-item ${tx.type} ${tx.isFixed ? "fixed" : ""} ${tx.paid ? "paid" : ""}`}
+      >
+        {opts?.showPaidToggle && (
+          <button
+            className="icon-btn small paid-toggle"
+            title={tx.paid ? "Marcar como não paga" : "Marcar como paga"}
+            onClick={() => togglePaid(tx)}
+          >
+            {tx.paid ? (
+              <CheckCircle2 size={18} className="paid-icon" />
+            ) : (
+              <Circle size={18} />
+            )}
+          </button>
+        )}
+        <span className="tx-icon">{cat?.icon ?? "📦"}</span>
+        <div className="tx-info">
+          <span className="tx-desc">{tx.description}</span>
+          <span className="tx-cat">{cat?.name ?? "—"}</span>
+        </div>
+        {card && (
+          <span
+            className="card-tag"
+            style={{ borderColor: card.color, color: card.color }}
+          >
+            <CreditCardIcon size={11} /> {card.name}
+          </span>
+        )}
+        {tx.installments > 1 && (
+          <span className="installment-tag">
+            {tx.currentInstallment}/{tx.installments}x
+          </span>
+        )}
+        <span className={`tx-amount ${tx.type}`}>
+          {tx.type === "despesa" ? "−" : "+"}
+          {formatCurrency(tx.amount)}
+        </span>
+        <div className="tx-actions">
+          <button className="icon-btn small" onClick={() => onEdit(tx)}>
+            <Pencil size={14} />
+          </button>
+          <button
+            className="icon-btn small danger"
+            onClick={() => deleteTx(tx)}
+          >
+            <Trash2 size={14} />
+          </button>
+        </div>
+      </div>
+    );
+  }
 }
